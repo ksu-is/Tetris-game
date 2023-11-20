@@ -53,4 +53,22 @@ def draw_shape(shape, pos, color):
                 pygame.draw.rect(screen, color, (pos[0] + x * GRID_SIZE, pos[1] + y * GRID_SIZE, GRID_SIZE, GRID_SIZE))
                 pygame.draw.rect(screen, WHITE, (pos[0] + x * GRID_SIZE, pos[1] + y * GRID_SIZE, GRID_SIZE, GRID_SIZE), 1)
 
+                def is_valid_position(shape, pos, grid):
+    for y, row in enumerate(shape):
+        for x, value in enumerate(row):
+            if value:
+                if (
+                    pos[0] + x < 0
+                    or pos[0] + x >= WIDTH / GRID_SIZE
+                    or pos[1] + y >= HEIGHT / GRID_SIZE
+                    or grid[pos[1] // GRID_SIZE + y][pos[0] // GRID_SIZE + x] is not None
+                ):
+                    return False
+    return True
+
+# Function to remove completed lines
+def remove_line(grid, line):
+    del grid[line]
+    return [[None] * (WIDTH // GRID_SIZE)] + grid
+
     

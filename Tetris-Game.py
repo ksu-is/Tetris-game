@@ -53,8 +53,8 @@ def draw_shape(shape, pos, color):
                 pygame.draw.rect(screen, color, (pos[0] + x * GRID_SIZE, pos[1] + y * GRID_SIZE, GRID_SIZE, GRID_SIZE))
                 pygame.draw.rect(screen, WHITE, (pos[0] + x * GRID_SIZE, pos[1] + y * GRID_SIZE, GRID_SIZE, GRID_SIZE), 1)
 
-<<<<<<< HEAD
-                def is_valid_position(shape, pos, grid):
+# Function to check if a shape can be placed at a certain position
+def is_valid_position(shape, pos, grid):
     for y, row in enumerate(shape):
         for x, value in enumerate(row):
             if value:
@@ -72,6 +72,34 @@ def remove_line(grid, line):
     del grid[line]
     return [[None] * (WIDTH // GRID_SIZE)] + grid
 
-=======
->>>>>>> 26cb9a6c6aab91882d5237738f57e19aa7a4c2c8
-    
+# Main game loop
+def main():
+    grid = [[None] * (WIDTH // GRID_SIZE) for _ in range(HEIGHT // GRID_SIZE)]
+
+    current_shape = random.choice(SHAPES)
+    current_color = random.choice(SHAPES_COLORS)
+    shape_pos = [WIDTH // 2 - len(current_shape[0]) // 2 * GRID_SIZE, 0]
+
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                quit()
+
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_LEFT:
+                    new_pos = [shape_pos[0] - GRID_SIZE, shape_pos[1]]
+                    if is_valid_position(current_shape, new_pos, grid):
+                        shape_pos = new_pos
+                elif event.key == pygame.K_RIGHT:
+                    new_pos = [shape_pos[0] + GRID_SIZE, shape_pos[1]]
+                    if is_valid_position(current_shape, new_pos, grid):
+                        shape_pos = new_pos
+                elif event.key == pygame.K_DOWN:
+                    new_pos = [shape_pos[0], shape_pos[1] + GRID_SIZE]
+                    if is_valid_position(current_shape, new_pos, grid):
+                        shape_pos = new_pos
+                elif event.key == pygame.K_UP:
+                    rotated_shape = list(zip(*reversed(current_shape)))
+                    if is_valid_position(rotated_shape, shape_pos, grid):
+                        current_shape = rotated_shape

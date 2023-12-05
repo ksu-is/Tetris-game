@@ -4,102 +4,135 @@ import random
 # Initialize Pygame
 pygame.init()
 
-# Constants
-WIDTH, HEIGHT = 300, 600
-GRID_SIZE = 30
-FPS = 10
-
-# Colors
-WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
+WHITE = (255, 255, 255)
 RED = (255, 0, 0)
+GREEN = (0, 255, 0)
+BLUE = (0, 0, 255)
 CYAN = (0, 255, 255)
 MAGENTA = (255, 0, 255)
 YELLOW = (255, 255, 0)
-GREEN = (0, 255, 0)
-BLUE = (0, 0, 255)
 ORANGE = (255, 165, 0)
-
-# Shapes and their colors
-SHAPES = [
-    [[1, 1, 1, 1]],  # I
-    [[1, 1, 1], [1]],  # L
-    [[1, 1, 1], [0, 0, 1]],  # J
-    [[1, 1], [1, 1]],  # O
-    [[1, 1, 1], [0, 1]],  # S
-    [[1, 1, 1], [1, 0]],  # T
-    [[1, 1], [0, 1, 1]],  # Z
+SCREEN_WIDTH = 400
+SCREEN_HEIGHT = 400
+GRID_SIZE = 30
+GRID_WIDTH = SCREEN_WIDTH // GRID_SIZE
+GRID_HEIGHT = SCREEN_HEIGHT // GRID_SIZE
+INITIAL_POSITION = (GRID_WIDTH // 2, 0)
+PIECES = [
+    [[1, 1, 1, 1]], 
+    [[1, 1], [1, 1]], 
+    [[1, 1, 0], [0, 1, 1]],  
+    [[0, 1, 1], [1, 1, 0]],  
+    [[1, 1, 1], [0, 1, 0]],  
+    [[1, 1, 1], [0, 0, 1]],  
+    [[1, 1, 1], [1, 0, 0]]  
 ]
 
-SHAPES_COLORS = [CYAN, ORANGE, BLUE, YELLOW, GREEN, MAGENTA, RED]
-
-# Initialize game window
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
+screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption("Tetris")
 clock = pygame.time.Clock()
 
-# Function to draw the grid
 def draw_grid():
-    for x in range(0, WIDTH, GRID_SIZE):
-        pygame.draw.line(screen, WHITE, (x, 0), (x, HEIGHT))
-    for y in range(0, HEIGHT, GRID_SIZE):
-        pygame.draw.line(screen, WHITE, (0, y), (WIDTH, y))
+    for x in range(0, SCREEN_WIDTH, GRID_SIZE):
+        pygame.draw.line(screen, WHITE, (x, 0), (x, SCREEN_HEIGHT))
+    for y in range(0, SCREEN_HEIGHT, GRID_SIZE):
+        pygame.draw.line(screen, WHITE, (0, y), (SCREEN_WIDTH, y))
 
-# Function to draw a shape on the grid
-def draw_shape(shape, pos, color):
-    for y, row in enumerate(shape):
-        for x, value in enumerate(row):
-            if value:
-                pygame.draw.rect(screen, color, (pos[0] + x * GRID_SIZE, pos[1] + y * GRID_SIZE, GRID_SIZE, GRID_SIZE))
-                pygame.draw.rect(screen, WHITE, (pos[0] + x * GRID_SIZE, pos[1] + y * GRID_SIZE, GRID_SIZE, GRID_SIZE), 1)
+def draw_tetromino(tetromino, position):
+    for y in range(len(tetromino)):
+        for x in range(len(tetromino[y])):
+            if tetromino[y][x] == 1:
+                pygame.draw.rect(screen, tetromino_color, (position[0] * GRID_SIZE + x * GRID_SIZE,  position[1] * GRID_SIZE + y * GRID_SIZE, GRID_SIZE, GRID_SIZE))
 
-# Function to check if a shape can be placed at a certain position
-def is_valid_position(shape, pos, grid):
-    for y, row in enumerate(shape):
-        for x, value in enumerate(row):
-            if value:
-                if (
-                    pos[0] + x < 0
-                    or pos[0] + x >= WIDTH / GRID_SIZE
-                    or pos[1] + y >= HEIGHT / GRID_SIZE
-                    or grid[pos[1] // GRID_SIZE + y][pos[0] // GRID_SIZE + x] is not None
-                ):
-                    return False
-    return True
+def check_collision(tetromino, position, grid):
+    for y in range(len(tetromino)):
+        for x in range(len(tetromino[y])):
+            if tetromino[y][x] == 1:
+                if position[0] + x < 0 or position[0] + x >= GRID_WIDTH or \
+                        position[1] + y >= GRID_HEIGHT or grid[position[1] + y][position[0] + x]:
+                    return True
+    return False
 
-# Function to remove completed lines
-def remove_line(grid, line):
-    del grid[line]
-    return [[None] * (WIDTH // GRID_SIZE)] + grid
+def merge_tetromino(tetromino, position, grid):
+    for y in range(len(tetromino)):
+        for x in range(len(tetromino[y])):
+            if tetromino[y][x] == 1:
+                grid[position[1] + y][position[0] + x] = 1
 
-# Main game loop
-def main():
-    grid = [[None] * (WIDTH // GRID_SIZE) for _ in range(HEIGHT // GRID_SIZE)]
+def remove_completed_rows(grid):
+    completed_rows = []
+    for y in range(GRID_HEIGHT):
+        if all(grid[y]):
+            completed_rows.append(y)
+    for row in completed_rows:
+        del grid[row]
+        grid.insert(0, [0] * GRID_WIDTH)
+    return len(completed_rows)
 
-    current_shape = random.choice(SHAPES)
-    current_color = random.choice(SHAPES_COLORS)
-    shape_pos = [WIDTH // 2 - len(current_shape[0]) // 2 * GRID_SIZE, 0]
+grid = [[0] * GRID_WIDTH for _ in range(GRID_HEIGHT)]
+tetromino = random.choice(PIECES)
+tetromino_color = random.choice([CYAN, YELLOW, MAGENTA, GREEN, RED, BLUE, ORANGE])
+position = list(INITIAL_POSITION)
+score = 0
+start_time = pygame.time.get_ticks()
 
-    while True:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                quit()
+game_over = False
+while not game_over:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            game_over = True
 
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_LEFT:
-                    new_pos = [shape_pos[0] - GRID_SIZE, shape_pos[1]]
-                    if is_valid_position(current_shape, new_pos, grid):
-                        shape_pos = new_pos
-                elif event.key == pygame.K_RIGHT:
-                    new_pos = [shape_pos[0] + GRID_SIZE, shape_pos[1]]
-                    if is_valid_position(current_shape, new_pos, grid):
-                        shape_pos = new_pos
-                elif event.key == pygame.K_DOWN:
-                    new_pos = [shape_pos[0], shape_pos[1] + GRID_SIZE]
-                    if is_valid_position(current_shape, new_pos, grid):
-                        shape_pos = new_pos
-                elif event.key == pygame.K_UP:
-                    rotated_shape = list(zip(*reversed(current_shape)))
-                    if is_valid_position(rotated_shape, shape_pos, grid):
-                        current_shape = rotated_shape
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_LEFT:
+                position[0] -= 1
+                if check_collision(tetromino, position, grid):
+                    position[0] += 1
+            elif event.key == pygame.K_RIGHT:
+                position[0] += 1
+                if check_collision(tetromino, position, grid):
+                    position[0] -= 1
+            elif event.key == pygame.K_DOWN:
+                position[1] += 1
+                if check_collision(tetromino, position, grid):
+                    position[1] -= 1
+            elif event.key == pygame.K_UP:
+                rotated_tetromino = list(zip(*reversed(tetromino)))
+                if not check_collision(rotated_tetromino, position, grid):
+                    tetromino = rotated_tetromino
+
+    position[1] += 1
+    if check_collision(tetromino, position, grid):
+        position[1] -= 1
+        merge_tetromino(tetromino, position, grid)
+        completed_rows = remove_completed_rows(grid)
+        score += completed_rows
+        tetromino = random.choice(PIECES)
+        tetromino_color = random.choice([CYAN, YELLOW, MAGENTA, GREEN, RED, BLUE, ORANGE])
+        position = list(INITIAL_POSITION)
+        if check_collision(tetromino, position, grid):
+            game_over = True
+
+
+    screen.fill(BLACK)
+    draw_grid()
+    draw_tetromino(tetromino, position)
+    for y in range(GRID_HEIGHT):
+        for x in range(GRID_WIDTH):
+            if grid[y][x] == 1:
+                pygame.draw.rect(screen, WHITE, (x * GRID_SIZE, y * GRID_SIZE, GRID_SIZE, GRID_SIZE))
+
+    pygame.display.flip()
+    clock.tick(2)  
+
+
+elapsed_time = (pygame.time.get_ticks() - start_time) / 1000
+screen.fill(BLACK)
+font = pygame.font.Font(None, 36)
+score_text = font.render(f"Score: {score}", True, WHITE)
+time_text = font.render(f"Time: {elapsed_time} seconds", True, WHITE)
+screen.blit(score_text, (SCREEN_WIDTH // 2 - score_text.get_width() // 2, SCREEN_HEIGHT // 2 - 50))
+screen.blit(time_text, (SCREEN_WIDTH // 2 - time_text.get_width() // 2, SCREEN_HEIGHT // 2))
+pygame.display.flip()
+pygame.time.wait(5000)
+pygame.quit()
